@@ -1,97 +1,146 @@
 jQuery(document).ready(function($) {
     // Modal handling
-    $('.modal .close').on('click', function() {
+    $('.close').click(function() {
         $(this).closest('.modal').hide();
     });
 
-    $(window).on('click', function(event) {
+    $(window).click(function(event) {
         if ($(event.target).hasClass('modal')) {
             $('.modal').hide();
         }
     });
 
-    // Edit subscription
-    $('.action-button[data-action="edit"]').on('click', function() {
-        const subscriptionId = $(this).data('subscription-id');
-        $('#edit-subscription-id').val(subscriptionId);
-        $('#edit-subscription-modal').show();
-    });
+    // Approve subscription
+    $('.approve-subscription').click(function() {
+        if (!confirm('Are you sure you want to approve this subscription?')) {
+            return;
+        }
 
-    // Record payment
-    $('.record-payment-button').on('click', function() {
-        const subscriptionId = $(this).data('subscription-id');
-        $('#payment-subscription-id').val(subscriptionId);
-        $('#record-payment-modal').show();
-    });
+        const button = $(this);
+        const id = button.data('id');
+        const nonce = button.data('nonce');
 
-    // Handle edit subscription form submission
-    $('#edit-subscription-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        const form = $(this);
-        const submitButton = form.find('button[type="submit"]');
-        submitButton.prop('disabled', true);
+        button.prop('disabled', true);
 
         $.ajax({
-            url: akadimiesAdmin.ajaxurl,
+            url: ajaxurl,
             type: 'POST',
             data: {
                 action: 'update_subscription_status',
-                nonce: akadimiesAdmin.nonce,
-                subscription_id: $('#edit-subscription-id').val(),
-                status: $('#subscription-status').val(),
-                admin_notes: $('#admin-notes').val()
+                subscription_id: id,
+                status: 'active',
+                nonce: nonce
             },
             success: function(response) {
                 if (response.success) {
                     location.reload();
                 } else {
-                    alert(response.data || 'Update failed');
+                    alert(response.data.message || 'Error updating subscription');
+                    button.prop('disabled', false);
                 }
             },
             error: function() {
                 alert('Connection error');
-            },
-            complete: function() {
-                submitButton.prop('disabled', false);
+                button.prop('disabled', false);
             }
         });
     });
 
-    // Handle payment form submission
-    $('#record-payment-form').on('submit', function(e) {
-        e.preventDefault();
-        
-        const form = $(this);
-        const submitButton = form.find('button[type="submit"]');
-        submitButton.prop('disabled', true);
+    // Reject subscription
+    $('.reject-subscription').click(function() {
+        const reason = prompt('Please enter rejection reason:');
+        if (reason === null) {
+            return;
+        }
+
+        const button = $(this);
+        const id = button.data('id');
+        const nonce = button.data('nonce');
+
+        button.prop('disabled', true);
 
         $.ajax({
-            url: akadimiesAdmin.ajaxurl,
+            url: ajaxurl,
             type: 'POST',
             data: {
-                action: 'record_manual_payment',
-                nonce: akadimiesAdmin.nonce,
-                subscription_id: $('#payment-subscription-id').val(),
-                payment_method: $('#payment-method').val(),
-                amount: $('#payment-amount').val(),
-                payment_notes: $('#payment-notes').val()
+                action: 'update_subscription_status',
+                subscription_id: id,
+                status: 'rejected',
+                notes: reason,
+                nonce: nonce
             },
             success: function(response) {
                 if (response.success) {
-                    if (response.data.receipt_id) {
-                        alert('Payment recorded successfully. Receipt: ' + response.data.receipt_id);
-                    }
                     location.reload();
                 } else {
-                    alert(response.data || 'Failed to record payment');
+                    alert(response.data.message || 'Error updating subscription');
+                    button.prop('disabled', false);
                 }
             },
             error: function() {
                 alert('Connection error');
+                button.prop('disabled', false);
+            }
+        });
+    });
+
+    // Cancel subscription
+    $('.cancel-subscription').click(function() {
+        if (!confirm('Are you sure you want to cancel this subscription?')) {
+            return;
+        }
+
+        const button = $(this);
+        const id = button.data('id');
+        const nonce = button.data('nonce');
+
+        button.prop('disabled', true);
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'update_subscription_status',
+                subscription_id: id,
+                status: 'cancelled',
+                nonce: nonce
             },
-            complete: function() {
-                submitButton.prop('disabled', false);
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert(response.data.message || 'Error updating subscription');
+                    button.prop('disabled', false);
+                }
+            },
+            error: function() {
+                alert('Connection error');
+                button.prop('disabled', false);
+            }
+        });
+    });
+
+    // View subscription details
+    $('.view-details').click(function() {
+        const id = $(this).data('id');
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'get_subscription_details',
+                subscription_id: id
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#subscription-details-content').html(response.data.html);
+                    $('#subscription-details-modal').show();
+                } else {
+                    alert('Error loading subscription details');
+                }
+            },
+            error: function() {
+                alert('Connection error');
             }
         });
     });

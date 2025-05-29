@@ -15,6 +15,7 @@
                             <th><?php _e('Type', 'akadimies'); ?></th>
                             <th><?php _e('Status', 'akadimies'); ?></th>
                             <th><?php _e('Date', 'akadimies'); ?></th>
+                            <th><?php _e('Actions', 'akadimies'); ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -23,11 +24,43 @@
                                 <td>
                                     <?php 
                                     echo esc_html($subscription->display_name ?: __('Unknown User', 'akadimies'));
+                                    echo '<br><small>' . esc_html($subscription->user_email) . '</small>';
                                     ?>
                                 </td>
                                 <td><?php echo esc_html($subscription->subscription_type); ?></td>
-                                <td><?php echo esc_html($subscription->status); ?></td>
+                                <td>
+                                    <span class="subscription-status status-<?php echo esc_attr($subscription->status); ?>">
+                                        <?php echo esc_html(ucfirst($subscription->status)); ?>
+                                    </span>
+                                </td>
                                 <td><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($subscription->created_at))); ?></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <?php if ($subscription->status === 'pending'): ?>
+                                            <button type="button" class="button button-primary approve-subscription" 
+                                                    data-id="<?php echo esc_attr($subscription->id); ?>"
+                                                    data-nonce="<?php echo wp_create_nonce('approve-subscription-' . $subscription->id); ?>">
+                                                <?php _e('Approve', 'akadimies'); ?>
+                                            </button>
+                                            <button type="button" class="button reject-subscription"
+                                                    data-id="<?php echo esc_attr($subscription->id); ?>"
+                                                    data-nonce="<?php echo wp_create_nonce('reject-subscription-' . $subscription->id); ?>">
+                                                <?php _e('Reject', 'akadimies'); ?>
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($subscription->status === 'active'): ?>
+                                            <button type="button" class="button cancel-subscription"
+                                                    data-id="<?php echo esc_attr($subscription->id); ?>"
+                                                    data-nonce="<?php echo wp_create_nonce('cancel-subscription-' . $subscription->id); ?>">
+                                                <?php _e('Cancel', 'akadimies'); ?>
+                                            </button>
+                                        <?php endif; ?>
+                                        <button type="button" class="button view-details"
+                                                data-id="<?php echo esc_attr($subscription->id); ?>">
+                                            <?php _e('View Details', 'akadimies'); ?>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
@@ -36,5 +69,14 @@
                 <p><?php _e('No subscriptions found.', 'akadimies'); ?></p>
             <?php endif; ?>
         </div>
+    </div>
+</div>
+
+<!-- Subscription Details Modal -->
+<div id="subscription-details-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2><?php _e('Subscription Details', 'akadimies'); ?></h2>
+        <div id="subscription-details-content"></div>
     </div>
 </div>
