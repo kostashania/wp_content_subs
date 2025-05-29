@@ -149,14 +149,24 @@ class AkadimiesPlugin {
     }
 
     public function render_subscription_form() {
-        ob_start();
-        if (file_exists(AKADIMIES_PATH . 'templates/frontend/subscription-types/player.php')) {
-            include AKADIMIES_PATH . 'templates/frontend/subscription-types/player.php';
-        } else {
-            echo '<div class="subscription-form">Subscription form template not found.</div>';
-        }
-        return ob_get_clean();
+    ob_start();
+    $template_path = AKADIMIES_PATH . 'templates/frontend/subscription-types/player.php';
+    
+    if (file_exists($template_path)) {
+        include $template_path;
+    } else {
+        echo '<div class="subscription-form">';
+        echo '<div class="subscription-plan player-plan">';
+        echo '<h2>' . esc_html__('Player Subscription', 'akadimies') . '</h2>';
+        echo '<div class="price">' . esc_html(get_option('akadimies_player_price', '29.99')) . ' € / ' . esc_html__('month', 'akadimies') . '</div>';
+        echo '<button class="subscribe-button">' . esc_html__('Subscribe Now', 'akadimies') . '</button>';
+        echo '</div>';
+        echo '</div>';
     }
+    
+    $content = ob_get_clean();
+    return $content;
+	}
 
     public function get_config($key = null) {
         if ($key === null) {

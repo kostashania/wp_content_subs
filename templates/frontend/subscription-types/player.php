@@ -1,27 +1,27 @@
-// File: /templates/frontend/subscription-types/player.php
-<?php if (!defined('ABSPATH')) exit; ?>
-
+<?php
+if (!defined('ABSPATH')) exit;
+?>
 <div class="subscription-plan player-plan">
     <div class="plan-header">
-        <h2>Player Subscription</h2>
+        <h2><?php _e('Player Subscription', 'akadimies'); ?></h2>
         <div class="price">
-            <?php echo AkadimiesUtilities::format_price(get_option('player_price')); ?> / month
+            <?php echo esc_html(get_option('akadimies_player_price', '29.99')); ?> € / <?php _e('month', 'akadimies'); ?>
         </div>
     </div>
 
     <div class="plan-features">
         <ul>
-            <li>Personal profile page</li>
-            <li>Performance statistics tracking</li>
-            <li>Team connection features</li>
-            <li>Match history</li>
-            <li>Skill assessment tools</li>
+            <li><?php _e('Personal profile page', 'akadimies'); ?></li>
+            <li><?php _e('Performance statistics tracking', 'akadimies'); ?></li>
+            <li><?php _e('Team connection features', 'akadimies'); ?></li>
+            <li><?php _e('Match history', 'akadimies'); ?></li>
+            <li><?php _e('Skill assessment tools', 'akadimies'); ?></li>
         </ul>
     </div>
 
     <div class="plan-footer">
-        <button class="subscribe-button" data-plan="player" data-price="<?php echo esc_attr(get_option('player_price')); ?>">
-            Subscribe Now
+        <button class="subscribe-button" data-plan="player" data-price="<?php echo esc_attr(get_option('akadimies_player_price', '29.99')); ?>">
+            <?php _e('Subscribe Now', 'akadimies'); ?>
         </button>
     </div>
 </div>
