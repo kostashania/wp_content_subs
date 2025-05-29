@@ -18,7 +18,6 @@ class AkadimiesDatabase {
             end_date datetime NULL,
             payment_id varchar(100) NULL,
             amount decimal(10,2) NOT NULL,
-            admin_notes text NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
@@ -39,9 +38,7 @@ class AkadimiesDatabase {
             notes text NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
-            KEY subscription_id (subscription_id),
-            KEY receipt_number (receipt_number),
-            KEY payment_method (payment_method)
+            KEY subscription_id (subscription_id)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -49,7 +46,7 @@ class AkadimiesDatabase {
             dbDelta($query);
         }
 
-        add_option('akadimies_db_version', '1.1');
+        add_option('akadimies_db_version', '1.0');
     }
 
     public function get_subscriptions($args = array()) {
@@ -112,6 +109,18 @@ class AkadimiesDatabase {
         );
     }
 
+    public function get_payments($subscription_id = null) {
+        global $wpdb;
+        
+        $sql = "SELECT * FROM {$wpdb->prefix}akadimies_payments";
+        if ($subscription_id) {
+            $sql .= $wpdb->prepare(" WHERE subscription_id = %d", $subscription_id);
+        }
+        $sql .= " ORDER BY created_at DESC";
+        
+        return $wpdb->get_results($sql);
+    }
+
     public function create_payment($data) {
         global $wpdb;
         
@@ -122,60 +131,10 @@ class AkadimiesDatabase {
                 '%d', // subscription_id
                 '%s', // payment_method
                 '%f', // amount
-                '%s', // payment_date
                 '%s', // status
                 '%s', // receipt_number
-                '%s', // transaction_id
                 '%s'  // notes
             )
         );
-    }
-
-    public function get_payment($id) {
-        global $wpdb;
-        
-        return $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}akadimies_payments 
-            WHERE id = %d",
-            $id
-        ));
-    }
-
-    public function get_payments($args = array()) {
-        global $wpdb;
-        
-        $defaults = array(
-            'subscription_id' => null,
-            'payment_method' => null,
-            'limit' => 10,
-            'offset' => 0
-        );
-
-        $args = wp_parse_args($args, $defaults);
-        $where = array();
-        $values = array();
-
-        if ($args['subscription_id']) {
-            $where[] = 'subscription_id = %d';
-            $values[] = $args['subscription_id'];
-        }
-
-        if ($args['payment_method']) {
-            $where[] = 'payment_method = %s';
-            $values[] = $args['payment_method'];
-        }
-
-        $where_clause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-        
-        $values[] = $args['limit'];
-        $values[] = $args['offset'];
-
-        return $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}akadimies_payments 
-            {$where_clause}
-            ORDER BY created_at DESC 
-            LIMIT %d OFFSET %d",
-            $values
-        ));
     }
 }

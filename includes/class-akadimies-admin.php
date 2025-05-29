@@ -28,8 +28,8 @@ class AkadimiesAdmin {
 
     public function render_subscriptions_page() {
         global $wpdb;
-
-        // Get subscriptions with user data only (no payment join for now)
+        
+        // Get subscriptions with user data only
         $subscriptions = $wpdb->get_results("
             SELECT s.*, u.display_name, u.user_email
             FROM {$wpdb->prefix}akadimies_subscriptions s
