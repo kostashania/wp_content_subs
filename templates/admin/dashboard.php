@@ -1,6 +1,5 @@
-<?php
-if (!defined('ABSPATH')) exit;
-?>
+<?php if (!defined('ABSPATH')) exit; ?>
+
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 
@@ -23,8 +22,7 @@ if (!defined('ABSPATH')) exit;
                             <tr>
                                 <td>
                                     <?php 
-                                    $user = get_user_by('id', $subscription->user_id);
-                                    echo esc_html($user ? $user->display_name : __('Unknown User', 'akadimies'));
+                                    echo esc_html($subscription->display_name ?: __('Unknown User', 'akadimies'));
                                     ?>
                                 </td>
                                 <td><?php echo esc_html($subscription->subscription_type); ?></td>
