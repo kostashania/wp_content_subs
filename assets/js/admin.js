@@ -23,7 +23,7 @@ jQuery(document).ready(function($) {
         button.prop('disabled', true);
 
         $.ajax({
-            url: ajaxurl,
+            url: akadimiesAdmin.ajaxurl,
             type: 'POST',
             data: {
                 action: 'update_subscription_status',
@@ -61,7 +61,7 @@ jQuery(document).ready(function($) {
         button.prop('disabled', true);
 
         $.ajax({
-            url: ajaxurl,
+            url: akadimiesAdmin.ajaxurl,
             type: 'POST',
             data: {
                 action: 'update_subscription_status',
@@ -93,7 +93,7 @@ jQuery(document).ready(function($) {
         const nonce = akadimiesAdmin.nonce;
         
         $.ajax({
-            url: ajaxurl,
+            url: akadimiesAdmin.ajaxurl,
             type: 'POST',
             data: {
                 action: 'get_subscription_details',
