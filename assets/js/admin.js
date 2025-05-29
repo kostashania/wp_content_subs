@@ -18,7 +18,7 @@ jQuery(document).ready(function($) {
 
         const button = $(this);
         const id = button.data('id');
-        const nonce = button.data('nonce');
+        const nonce = akadimiesAdmin.nonce;
 
         button.prop('disabled', true);
 
@@ -39,8 +39,9 @@ jQuery(document).ready(function($) {
                     button.prop('disabled', false);
                 }
             },
-            error: function() {
-                alert('Connection error');
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', status, error);
+                alert('Connection error: ' + error);
                 button.prop('disabled', false);
             }
         });
@@ -55,7 +56,7 @@ jQuery(document).ready(function($) {
 
         const button = $(this);
         const id = button.data('id');
-        const nonce = button.data('nonce');
+        const nonce = akadimiesAdmin.nonce;
 
         button.prop('disabled', true);
 
@@ -77,44 +78,9 @@ jQuery(document).ready(function($) {
                     button.prop('disabled', false);
                 }
             },
-            error: function() {
-                alert('Connection error');
-                button.prop('disabled', false);
-            }
-        });
-    });
-
-    // Cancel subscription
-    $('.cancel-subscription').click(function() {
-        if (!confirm('Are you sure you want to cancel this subscription?')) {
-            return;
-        }
-
-        const button = $(this);
-        const id = button.data('id');
-        const nonce = button.data('nonce');
-
-        button.prop('disabled', true);
-
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'update_subscription_status',
-                subscription_id: id,
-                status: 'cancelled',
-                nonce: nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                } else {
-                    alert(response.data.message || 'Error updating subscription');
-                    button.prop('disabled', false);
-                }
-            },
-            error: function() {
-                alert('Connection error');
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', status, error);
+                alert('Connection error: ' + error);
                 button.prop('disabled', false);
             }
         });
@@ -122,25 +88,29 @@ jQuery(document).ready(function($) {
 
     // View subscription details
     $('.view-details').click(function() {
-        const id = $(this).data('id');
+        const button = $(this);
+        const id = button.data('id');
+        const nonce = akadimiesAdmin.nonce;
         
         $.ajax({
             url: ajaxurl,
             type: 'POST',
             data: {
                 action: 'get_subscription_details',
-                subscription_id: id
+                subscription_id: id,
+                nonce: nonce
             },
             success: function(response) {
                 if (response.success) {
                     $('#subscription-details-content').html(response.data.html);
                     $('#subscription-details-modal').show();
                 } else {
-                    alert('Error loading subscription details');
+                    alert('Error loading subscription details: ' + (response.data.message || 'Unknown error'));
                 }
             },
-            error: function() {
-                alert('Connection error');
+            error: function(xhr, status, error) {
+                console.log('AJAX Error:', status, error);
+                alert('Connection error: ' + error);
             }
         });
     });
