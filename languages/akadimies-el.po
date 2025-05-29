@@ -1,0 +1,204 @@
+# File: /languages/akadimies-el.po
+msgid ""
+msgstr ""
+"Project-Id-Version: Akadimies Subscription Manager\n"
+"POT-Creation-Date: 2024-05-28 10:00+0000\n"
+"PO-Revision-Date: 2024-05-28 10:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Greek\n"
+"Language: el\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.0\n"
+
+# General Terms
+msgid "Player"
+msgstr "Παίκτης"
+
+msgid "Coach"
+msgstr "Προπονητής"
+
+msgid "Sponsor"
+msgstr "Χορηγός"
+
+msgid "Active"
+msgstr "Ενεργή"
+
+msgid "Expired"
+msgstr "Έληξε"
+
+msgid "Pending"
+msgstr "Σε εκκρεμότητα"
+
+msgid "Cancelled"
+msgstr "Ακυρώθηκε"
+
+# Subscription Related
+msgid "Subscription"
+msgstr "Συνδρομή"
+
+msgid "Subscriptions"
+msgstr "Συνδρομές"
+
+msgid "Subscribe Now"
+msgstr "Εγγραφή Τώρα"
+
+msgid "Subscription Details"
+msgstr "Λεπτομέρειες Συνδρομής"
+
+msgid "Start Date"
+msgstr "Ημερομηνία Έναρξης"
+
+msgid "End Date"
+msgstr "Ημερομηνία Λήξης"
+
+msgid "Next Payment"
+msgstr "Επόμενη Πληρωμή"
+
+# Profile Related
+msgid "Profile"
+msgstr "Προφίλ"
+
+msgid "Edit Profile"
+msgstr "Επεξεργασία Προφίλ"
+
+msgid "Profile Image"
+msgstr "Εικόνα Προφίλ"
+
+msgid "Profile Details"
+msgstr "Λεπτομέρειες Προφίλ"
+
+msgid "Profile Views"
+msgstr "Προβολές Προφίλ"
+
+# Dashboard
+msgid "Dashboard"
+msgstr "Πίνακας Ελέγχου"
+
+msgid "Welcome"
+msgstr "Καλώς ήρθατε"
+
+msgid "Recent Activity"
+msgstr "Πρόσφατη Δραστηριότητα"
+
+msgid "Statistics"
+msgstr "Στατιστικά"
+
+# Payment Related
+msgid "Payment"
+msgstr "Πληρωμή"
+
+msgid "Amount"
+msgstr "Ποσό"
+
+msgid "Payment Status"
+msgstr "Κατάσταση Πληρωμής"
+
+msgid "Payment Method"
+msgstr "Μέθοδος Πληρωμής"
+
+# Messages
+msgid "Success"
+msgstr "Επιτυχία"
+
+msgid "Error"
+msgstr "Σφάλμα"
+
+msgid "Profile updated successfully"
+msgstr "Το προφίλ ενημερώθηκε με επιτυχία"
+
+msgid "Subscription activated successfully"
+msgstr "Η συνδρομή ενεργοποιήθηκε με επιτυχία"
+
+msgid "Payment completed successfully"
+msgstr "Η πληρωμή ολοκληρώθηκε με επιτυχία"
+
+# Admin Panel
+msgid "Settings"
+msgstr "Ρυθμίσεις"
+
+msgid "General Settings"
+msgstr "Γενικές Ρυθμίσεις"
+
+msgid "Payment Settings"
+msgstr "Ρυθμίσεις Πληρωμών"
+
+msgid "Email Settings"
+msgstr "Ρυθμίσεις Email"
+
+# Form Fields
+msgid "First Name"
+msgstr "Όνομα"
+
+msgid "Last Name"
+msgstr "Επώνυμο"
+
+msgid "Email Address"
+msgstr "Διεύθυνση Email"
+
+msgid "Phone Number"
+msgstr "Αριθμός Τηλεφώνου"
+
+msgid "Password"
+msgstr "Κωδικός"
+
+msgid "Confirm Password"
+msgstr "Επιβεβαίωση Κωδικού"
+
+# Buttons
+msgid "Save Changes"
+msgstr "Αποθήκευση Αλλαγών"
+
+msgid "Cancel"
+msgstr "Ακύρωση"
+
+msgid "Delete"
+msgstr "Διαγραφή"
+
+msgid "Update"
+msgstr "Ενημέρωση"
+
+# Notifications
+msgid "New message received"
+msgstr "Λήφθηκε νέο μήνυμα"
+
+msgid "Subscription expiring soon"
+msgstr "Η συνδρομή λήγει σύντομα"
+
+msgid "Payment due"
+msgstr "Εκκρεμής πληρωμή"
+
+# Social Media
+msgid "Facebook Profile"
+msgstr "Προφίλ Facebook"
+
+msgid "Twitter Profile"
+msgstr "Προφίλ Twitter"
+
+msgid "Instagram Profile"
+msgstr "Προφίλ Instagram"
+
+# Analytics
+msgid "Monthly Views"
+msgstr "Μηνιαίες Προβολές"
+
+msgid "Total Views"
+msgstr "Συνολικές Προβολές"
+
+msgid "Profile Interactions"
+msgstr "Αλληλεπιδράσεις Προφίλ"
+
+# Error Messages
+msgid "Invalid email address"
+msgstr "Μη έγκυρη διεύθυνση email"
+
+msgid "Password is required"
+msgstr "Ο κωδικός είναι υποχρεωτικός"
+
+msgid "Passwords do not match"
+msgstr "Οι κωδικοί δεν ταιριάζουν"
+
+msgid "Payment failed"
+msgstr "Η πληρωμή απέτυχε"
