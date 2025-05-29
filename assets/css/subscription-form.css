@@ -1,38 +1,48 @@
-/* File: /assets/css/subscription-form.css */
-.subscription-form {
-    max-width: 800px;
+.subscription-plans {
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+}
+
+.subscription-plan {
     background: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.form-step {
     margin-bottom: 20px;
+    padding: 30px;
+    text-align: center;
 }
 
-.field-group {
-    margin-bottom: 15px;
+.plan-header h2 {
+    color: #333;
+    margin: 0 0 10px;
 }
 
-.field-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
+.price {
+    font-size: 24px;
+    color: #4CAF50;
+    font-weight: bold;
+    margin: 20px 0;
 }
 
-.field-group input,
-.field-group select {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
+.subscribe-button {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 30px;
     border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+    display: inline-block;
+    text-decoration: none;
 }
 
-/* Responsive styles */
-@media (max-width: 768px) {
-    .subscription-form {
-        padding: 15px;
-    }
+.subscribe-button:hover {
+    background: #45a049;
+}
+
+.subscribe-button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
 }

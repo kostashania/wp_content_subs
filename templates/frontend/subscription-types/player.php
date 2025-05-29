@@ -1,6 +1,5 @@
-<?php
-if (!defined('ABSPATH')) exit;
-?>
+<?php if (!defined('ABSPATH')) exit; ?>
+
 <div class="subscription-plan player-plan">
     <div class="plan-header">
         <h2><?php _e('Player Subscription', 'akadimies'); ?></h2>
@@ -20,7 +19,9 @@ if (!defined('ABSPATH')) exit;
     </div>
 
     <div class="plan-footer">
-        <button class="subscribe-button" data-plan="player" data-price="<?php echo esc_attr(get_option('akadimies_player_price', '29.99')); ?>">
+        <button type="button" class="subscribe-button" 
+                data-plan="player" 
+                data-price="<?php echo esc_attr(get_option('akadimies_player_price', '29.99')); ?>">
             <?php _e('Subscribe Now', 'akadimies'); ?>
         </button>
     </div>
