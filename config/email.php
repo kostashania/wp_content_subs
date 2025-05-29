@@ -1,9 +1,6 @@
-
 <?php
 if (!defined('ABSPATH')) exit;
 
-return array(
-    'enabled' => true,
 return [
     'from_name' => get_bloginfo('name'),
     'from_email' => get_bloginfo('admin_email'),

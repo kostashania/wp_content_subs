@@ -1,9 +1,6 @@
-
 <?php
 if (!defined('ABSPATH')) exit;
 
-return array(
-    'enabled' => true,
 return [
     'enabled' => true,
     'driver' => 'file', // file, redis, memcached

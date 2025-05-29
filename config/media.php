@@ -1,9 +1,6 @@
-
 <?php
 if (!defined('ABSPATH')) exit;
 
-return array(
-    'enabled' => true,
 return [
     'image' => [
         'max_size' => 5242880, // 5MB
