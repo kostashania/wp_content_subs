@@ -42,6 +42,10 @@ class AkadimiesPlugin {
         add_action('plugins_loaded', [$this, 'load_dependencies'], 10);
         add_action('init', [$this, 'init'], 5);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
+
+        // Register AJAX handlers
+        add_action('wp_ajax_process_subscription', [$this, 'handle_subscription']);
+        add_action('wp_ajax_nopriv_process_subscription', [$this, 'handle_non_logged_subscription']);
     }
 
     public function autoload($class) {
@@ -149,24 +153,102 @@ class AkadimiesPlugin {
     }
 
     public function render_subscription_form() {
-    ob_start();
-    $template_path = AKADIMIES_PATH . 'templates/frontend/subscription-types/player.php';
-    
-    if (file_exists($template_path)) {
-        include $template_path;
-    } else {
-        echo '<div class="subscription-form">';
-        echo '<div class="subscription-plan player-plan">';
-        echo '<h2>' . esc_html__('Player Subscription', 'akadimies') . '</h2>';
-        echo '<div class="price">' . esc_html(get_option('akadimies_player_price', '29.99')) . ' € / ' . esc_html__('month', 'akadimies') . '</div>';
-        echo '<button class="subscribe-button">' . esc_html__('Subscribe Now', 'akadimies') . '</button>';
-        echo '</div>';
-        echo '</div>';
+        ob_start();
+        $template_path = AKADIMIES_PATH . 'templates/frontend/subscription-types/player.php';
+        
+        if (file_exists($template_path)) {
+            include $template_path;
+        } else {
+            echo '<div class="subscription-form">';
+            echo '<div class="subscription-plan player-plan">';
+            echo '<h2>' . esc_html__('Player Subscription', 'akadimies') . '</h2>';
+            echo '<div class="price">' . esc_html(get_option('akadimies_player_price', '29.99')) . ' € / ' . esc_html__('month', 'akadimies') . '</div>';
+            echo '<button class="subscribe-button">' . esc_html__('Subscribe Now', 'akadimies') . '</button>';
+            echo '</div>';
+            echo '</div>';
+        }
+        
+        $content = ob_get_clean();
+        return $content;
     }
-    
-    $content = ob_get_clean();
-    return $content;
-	}
+
+    public function handle_subscription() {
+        check_ajax_referer('akadimies-subscription', 'nonce');
+
+        // Get current user
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            wp_send_json_error([
+                'message' => __('Please log in to subscribe', 'akadimies')
+            ]);
+        }
+
+        // Get and validate subscription data
+        $plan = isset($_POST['plan']) ? sanitize_text_field($_POST['plan']) : '';
+        $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+
+        if (!in_array($plan, ['player', 'coach', 'sponsor'])) {
+            wp_send_json_error([
+                'message' => __('Invalid subscription plan', 'akadimies')
+            ]);
+        }
+
+        try {
+            // Prepare subscription data
+            $subscription_data = [
+                'user_id' => $user_id,
+                'subscription_type' => $plan,
+                'status' => 'pending',
+                'amount' => $price,
+                'start_date' => current_time('mysql'),
+                'end_date' => date('Y-m-d H:i:s', strtotime('+30 days'))
+            ];
+
+            // Insert subscription
+            global $wpdb;
+            $inserted = $wpdb->insert(
+                $wpdb->prefix . 'akadimies_subscriptions',
+                $subscription_data,
+                [
+                    '%d', // user_id
+                    '%s', // subscription_type
+                    '%s', // status
+                    '%f', // amount
+                    '%s', // start_date
+                    '%s'  // end_date
+                ]
+            );
+
+            if ($inserted) {
+                $subscription_id = $wpdb->insert_id;
+
+                // Log the subscription creation
+                error_log("New subscription created: ID {$subscription_id} for user {$user_id}");
+
+                // Send success response
+                wp_send_json_success([
+                    'message' => __('Subscription created successfully', 'akadimies'),
+                    'subscription_id' => $subscription_id,
+                    'redirect' => home_url('/subscription-confirmation/')
+                ]);
+            } else {
+                throw new Exception(__('Failed to create subscription', 'akadimies'));
+            }
+
+        } catch (Exception $e) {
+            error_log("Subscription creation failed: " . $e->getMessage());
+            wp_send_json_error([
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function handle_non_logged_subscription() {
+        wp_send_json_error([
+            'message' => __('Please log in to subscribe', 'akadimies'),
+            'redirect' => wp_login_url(wp_get_referer())
+        ]);
+    }
 
     public function get_config($key = null) {
         if ($key === null) {

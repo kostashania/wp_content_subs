@@ -1,38 +1,40 @@
-// File: /assets/js/subscription.js
 jQuery(document).ready(function($) {
-    const form = $('#subscription-form');
-    
-    // Handle role selection
-    $('#role-select').on('change', function() {
-        const role = $(this).val();
-        updatePricing(role);
-    });
+    $('.subscribe-button').on('click', function(e) {
+        e.preventDefault();
+        
+        const button = $(this);
+        const plan = button.data('plan');
+        const price = button.data('price');
 
-    // Initialize PayPal button
-    function initPayPalButton(price) {
-        paypal.Buttons({
-            createOrder: function(data, actions) {
-                return actions.order.create({
-                    purchase_units: [{
-                        amount: {
-                            value: price
-                        }
-                    }]
-                });
+        // Disable button to prevent double submission
+        button.prop('disabled', true);
+        
+        // Show loading state
+        button.text('Processing...');
+
+        // Make AJAX call to process subscription
+        $.ajax({
+            url: akadimiesAjax.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'process_subscription',
+                nonce: akadimiesAjax.nonce,
+                plan: plan,
+                price: price
             },
-            onApprove: function(data, actions) {
-                return actions.order.capture().then(function(details) {
-                    processSubscription(details);
-                });
+            success: function(response) {
+                if (response.success) {
+                    // Redirect to payment/confirmation page
+                    window.location.href = response.data.redirect;
+                } else {
+                    alert(response.data.message || 'Subscription failed. Please try again.');
+                    button.prop('disabled', false).text('Subscribe Now');
+                }
+            },
+            error: function() {
+                alert('Connection error. Please try again.');
+                button.prop('disabled', false).text('Subscribe Now');
             }
-        }).render('#paypal-button-container');
-    }
-
-    function updatePricing(role) {
-        // Pricing update logic
-    }
-
-    function processSubscription(paymentDetails) {
-        // Subscription processing logic
-    }
+        });
+    });
 });
