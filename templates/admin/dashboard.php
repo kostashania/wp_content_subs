@@ -35,31 +35,20 @@
                                 </td>
                                 <td><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($subscription->created_at))); ?></td>
                                 <td>
-                                    <div class="row-actions">
-                                        <?php if ($subscription->status === 'pending'): ?>
-                                            <button type="button" class="button button-primary approve-subscription" 
-                                                    data-id="<?php echo esc_attr($subscription->id); ?>"
-                                                    data-nonce="<?php echo wp_create_nonce('approve-subscription-' . $subscription->id); ?>">
-                                                <?php _e('Approve', 'akadimies'); ?>
-                                            </button>
-                                            <button type="button" class="button reject-subscription"
-                                                    data-id="<?php echo esc_attr($subscription->id); ?>"
-                                                    data-nonce="<?php echo wp_create_nonce('reject-subscription-' . $subscription->id); ?>">
-                                                <?php _e('Reject', 'akadimies'); ?>
-                                            </button>
-                                        <?php endif; ?>
-                                        <?php if ($subscription->status === 'active'): ?>
-                                            <button type="button" class="button cancel-subscription"
-                                                    data-id="<?php echo esc_attr($subscription->id); ?>"
-                                                    data-nonce="<?php echo wp_create_nonce('cancel-subscription-' . $subscription->id); ?>">
-                                                <?php _e('Cancel', 'akadimies'); ?>
-                                            </button>
-                                        <?php endif; ?>
-                                        <button type="button" class="button view-details"
+                                    <?php if ($subscription->status === 'pending'): ?>
+                                        <button type="button" class="button button-primary approve-subscription" 
                                                 data-id="<?php echo esc_attr($subscription->id); ?>">
-                                            <?php _e('View Details', 'akadimies'); ?>
+                                            <?php _e('Approve', 'akadimies'); ?>
                                         </button>
-                                    </div>
+                                        <button type="button" class="button reject-subscription"
+                                                data-id="<?php echo esc_attr($subscription->id); ?>">
+                                            <?php _e('Reject', 'akadimies'); ?>
+                                        </button>
+                                    <?php endif; ?>
+                                    <button type="button" class="button view-details"
+                                            data-id="<?php echo esc_attr($subscription->id); ?>">
+                                        <?php _e('View Details', 'akadimies'); ?>
+                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -80,3 +69,8 @@
         <div id="subscription-details-content"></div>
     </div>
 </div>
+
+<?php
+// Add nonce field
+wp_nonce_field('akadimies_admin_action', 'akadimies_nonce');
+?>

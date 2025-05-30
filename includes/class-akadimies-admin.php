@@ -52,7 +52,7 @@ class AkadimiesAdmin {
             wp_enqueue_script('akadimies-admin', AKADIMIES_URL . 'assets/js/admin.js', array('jquery'), AKADIMIES_VERSION, true);
             wp_localize_script('akadimies-admin', 'akadimiesAdmin', array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('akadimies-admin')
+                'nonce' => wp_create_nonce('akadimies_admin_action')
             ));
         }
     }
@@ -123,10 +123,14 @@ class AkadimiesAdmin {
     }
 
     public function ajax_update_subscription_status() {
-        check_ajax_referer('akadimies-admin', 'nonce');
+        if (!check_ajax_referer('akadimies_admin_action', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Invalid security token'));
+            return;
+        }
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Unauthorized'));
+            return;
         }
 
         $subscription_id = intval($_POST['subscription_id']);
@@ -146,31 +150,22 @@ class AkadimiesAdmin {
             array('%d')
         );
 
-        if ($updated) {
-            // Send email notification to user
-            $subscription = $wpdb->get_row($wpdb->prepare(
-                "SELECT s.*, u.user_email, u.display_name 
-                FROM {$wpdb->prefix}akadimies_subscriptions s
-                LEFT JOIN {$wpdb->users} u ON s.user_id = u.ID
-                WHERE s.id = %d",
-                $subscription_id
-            ));
-
-            if ($subscription) {
-                $this->send_status_notification($subscription, $status, $notes);
-            }
-
-            wp_send_json_success();
+        if ($updated !== false) {
+            wp_send_json_success(array('message' => 'Status updated successfully'));
         } else {
             wp_send_json_error(array('message' => 'Failed to update subscription'));
         }
     }
 
     public function ajax_get_subscription_details() {
-        check_ajax_referer('akadimies-admin', 'nonce');
+        if (!check_ajax_referer('akadimies_admin_action', 'nonce', false)) {
+            wp_send_json_error(array('message' => 'Invalid security token'));
+            return;
+        }
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Unauthorized'));
+            return;
         }
 
         $subscription_id = intval($_POST['subscription_id']);
@@ -221,28 +216,5 @@ class AkadimiesAdmin {
         } else {
             wp_send_json_error(array('message' => 'Subscription not found'));
         }
-    }
-
-    private function send_status_notification($subscription, $status, $notes = '') {
-        $subject = sprintf(__('Your subscription status has been updated - %s', 'akadimies'), get_bloginfo('name'));
-        
-        $message = sprintf(
-            __('Dear %s,
-
-Your subscription has been %s.
-
-%s
-
-Thank you for using our service.
-
-Best regards,
-%s', 'akadimies'),
-            $subscription->display_name,
-            $status,
-            $notes ? "\nNotes: " . $notes : '',
-            get_bloginfo('name')
-        );
-
-        wp_mail($subscription->user_email, $subject, $message);
     }
 }
