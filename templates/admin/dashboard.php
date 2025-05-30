@@ -1,6 +1,11 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 
 <div class="wrap">
+    <?php 
+    // Add this at the top of the file
+    wp_nonce_field('update_subscription_status', 'subscription_nonce'); 
+    ?>
+
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 
     <div class="akadimies-dashboard">
@@ -69,8 +74,3 @@
         <div id="subscription-details-content"></div>
     </div>
 </div>
-
-<?php
-// Add nonce field
-wp_nonce_field('akadimies_admin_action', 'akadimies_nonce');
-?>

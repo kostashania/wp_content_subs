@@ -1,4 +1,6 @@
 jQuery(document).ready(function($) {
+    console.log('Admin JS loaded');
+
     // Modal handling
     $('.close').click(function() {
         $(this).closest('.modal').hide();
@@ -18,7 +20,8 @@ jQuery(document).ready(function($) {
 
         const button = $(this);
         const id = button.data('id');
-        const nonce = akadimiesAdmin.nonce;
+
+        console.log('Processing approval for ID:', id);
 
         button.prop('disabled', true);
 
@@ -26,12 +29,13 @@ jQuery(document).ready(function($) {
             url: akadimiesAdmin.ajaxurl,
             type: 'POST',
             data: {
-                action: 'update_subscription_status',
+                action: 'handle_subscription',
+                action_type: 'approve',
                 subscription_id: id,
-                status: 'active',
-                nonce: nonce
+                nonce: akadimiesAdmin.nonce
             },
             success: function(response) {
+                console.log('Response:', response);
                 if (response.success) {
                     location.reload();
                 } else {
@@ -40,9 +44,13 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.log('AJAX Error:', status, error);
-                alert('Connection error: ' + error);
+                console.log('Error details:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText
+                });
                 button.prop('disabled', false);
+                alert('Error updating subscription. Check console for details.');
             }
         });
     });
@@ -56,7 +64,6 @@ jQuery(document).ready(function($) {
 
         const button = $(this);
         const id = button.data('id');
-        const nonce = akadimiesAdmin.nonce;
 
         button.prop('disabled', true);
 
@@ -64,11 +71,11 @@ jQuery(document).ready(function($) {
             url: akadimiesAdmin.ajaxurl,
             type: 'POST',
             data: {
-                action: 'update_subscription_status',
+                action: 'handle_subscription',
+                action_type: 'reject',
                 subscription_id: id,
-                status: 'rejected',
                 notes: reason,
-                nonce: nonce
+                nonce: akadimiesAdmin.nonce
             },
             success: function(response) {
                 if (response.success) {
@@ -79,9 +86,13 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.log('AJAX Error:', status, error);
-                alert('Connection error: ' + error);
+                console.log('Error details:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText
+                });
                 button.prop('disabled', false);
+                alert('Error updating subscription. Check console for details.');
             }
         });
     });
@@ -90,15 +101,15 @@ jQuery(document).ready(function($) {
     $('.view-details').click(function() {
         const button = $(this);
         const id = button.data('id');
-        const nonce = akadimiesAdmin.nonce;
         
         $.ajax({
             url: akadimiesAdmin.ajaxurl,
             type: 'POST',
             data: {
-                action: 'get_subscription_details',
+                action: 'handle_subscription',
+                action_type: 'get_details',
                 subscription_id: id,
-                nonce: nonce
+                nonce: akadimiesAdmin.nonce
             },
             success: function(response) {
                 if (response.success) {
@@ -109,8 +120,12 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.log('AJAX Error:', status, error);
-                alert('Connection error: ' + error);
+                console.log('Error details:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText
+                });
+                alert('Error loading subscription details. Check console for details.');
             }
         });
     });
