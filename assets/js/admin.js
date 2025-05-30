@@ -26,11 +26,10 @@ jQuery(document).ready(function($) {
         button.prop('disabled', true);
 
         $.ajax({
-            url: akadimiesAdmin.ajaxurl,
+            url: ajaxurl,
             type: 'POST',
             data: {
-                action: 'handle_subscription',
-                action_type: 'approve',
+                action: 'approve_subscription',
                 subscription_id: id,
                 nonce: akadimiesAdmin.nonce
             },
@@ -68,11 +67,10 @@ jQuery(document).ready(function($) {
         button.prop('disabled', true);
 
         $.ajax({
-            url: akadimiesAdmin.ajaxurl,
+            url: ajaxurl,
             type: 'POST',
             data: {
-                action: 'handle_subscription',
-                action_type: 'reject',
+                action: 'reject_subscription',
                 subscription_id: id,
                 notes: reason,
                 nonce: akadimiesAdmin.nonce
@@ -103,11 +101,10 @@ jQuery(document).ready(function($) {
         const id = button.data('id');
         
         $.ajax({
-            url: akadimiesAdmin.ajaxurl,
+            url: ajaxurl,
             type: 'POST',
             data: {
-                action: 'handle_subscription',
-                action_type: 'get_details',
+                action: 'get_subscription_details',
                 subscription_id: id,
                 nonce: akadimiesAdmin.nonce
             },

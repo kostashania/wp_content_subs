@@ -9,8 +9,9 @@ class AkadimiesAdmin {
         add_action('admin_init', array($this, 'register_settings'));
 
         // Add AJAX handlers
-        add_action('wp_ajax_handle_subscription', array($this, 'handle_subscription'));
-        add_action('wp_ajax_nopriv_handle_subscription', array($this, 'handle_subscription'));
+        add_action('wp_ajax_approve_subscription', array($this, 'approve_subscription'));
+        add_action('wp_ajax_reject_subscription', array($this, 'reject_subscription'));
+        add_action('wp_ajax_get_subscription_details', array($this, 'get_subscription_details'));
     }
 
     public function add_admin_menu() {
@@ -50,10 +51,9 @@ class AkadimiesAdmin {
         if (strpos($hook, 'akadimies') !== false) {
             wp_enqueue_style('akadimies-admin', AKADIMIES_URL . 'assets/css/admin-style.css');
             wp_enqueue_script('akadimies-admin', AKADIMIES_URL . 'assets/js/admin.js', array('jquery'), AKADIMIES_VERSION, true);
-            
             wp_localize_script('akadimies-admin', 'akadimiesAdmin', array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('handle_subscription')
+                'nonce' => wp_create_nonce('akadimies_admin_nonce')
             ));
         }
     }
@@ -120,43 +120,23 @@ class AkadimiesAdmin {
         );
     }
 
-    public function handle_subscription() {
-        check_ajax_referer('handle_subscription', 'nonce');
+    public function approve_subscription() {
+        check_ajax_referer('akadimies_admin_nonce', 'nonce');
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Unauthorized'));
-            return;
+            wp_die();
         }
 
-        $action = isset($_POST['action_type']) ? sanitize_text_field($_POST['action_type']) : '';
         $subscription_id = isset($_POST['subscription_id']) ? intval($_POST['subscription_id']) : 0;
 
-        if (!$subscription_id || !$action) {
-            wp_send_json_error(array('message' => 'Missing required parameters'));
-            return;
+        if (!$subscription_id) {
+            wp_send_json_error(array('message' => 'Invalid subscription ID'));
+            wp_die();
         }
 
-        switch ($action) {
-            case 'approve':
-                $this->approve_subscription($subscription_id);
-                break;
-            case 'reject':
-                $notes = isset($_POST['notes']) ? sanitize_textarea_field($_POST['notes']) : '';
-                $this->reject_subscription($subscription_id, $notes);
-                break;
-            case 'get_details':
-                $this->get_subscription_details($subscription_id);
-                break;
-            default:
-                wp_send_json_error(array('message' => 'Invalid action'));
-                break;
-        }
-    }
-
-    private function approve_subscription($subscription_id) {
         global $wpdb;
-        
-        $updated = $wpdb->update(
+        $result = $wpdb->update(
             $wpdb->prefix . 'akadimies_subscriptions',
             array(
                 'status' => 'active',
@@ -167,17 +147,33 @@ class AkadimiesAdmin {
             array('%d')
         );
 
-        if ($updated !== false) {
+        if ($result !== false) {
             wp_send_json_success(array('message' => 'Subscription approved'));
         } else {
-            wp_send_json_error(array('message' => 'Failed to approve subscription'));
+            wp_send_json_error(array('message' => 'Failed to update subscription'));
         }
+
+        wp_die();
     }
 
-    private function reject_subscription($subscription_id, $notes) {
+    public function reject_subscription() {
+        check_ajax_referer('akadimies_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+            wp_die();
+        }
+
+        $subscription_id = isset($_POST['subscription_id']) ? intval($_POST['subscription_id']) : 0;
+        $notes = isset($_POST['notes']) ? sanitize_textarea_field($_POST['notes']) : '';
+
+        if (!$subscription_id) {
+            wp_send_json_error(array('message' => 'Invalid subscription ID'));
+            wp_die();
+        }
+
         global $wpdb;
-        
-        $updated = $wpdb->update(
+        $result = $wpdb->update(
             $wpdb->prefix . 'akadimies_subscriptions',
             array(
                 'status' => 'rejected',
@@ -189,16 +185,31 @@ class AkadimiesAdmin {
             array('%d')
         );
 
-        if ($updated !== false) {
-            wp_send_json_success(array('message' => 'Subscription rejected'));
+        if ($result !== false) {
+            wp_send_json_error(array('message' => 'Subscription rejected'));
         } else {
-            wp_send_json_error(array('message' => 'Failed to reject subscription'));
+            wp_send_json_error(array('message' => 'Failed to update subscription'));
         }
+
+        wp_die();
     }
 
-    private function get_subscription_details($subscription_id) {
+    public function get_subscription_details() {
+        check_ajax_referer('akadimies_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+            wp_die();
+        }
+
+        $subscription_id = isset($_POST['subscription_id']) ? intval($_POST['subscription_id']) : 0;
+
+        if (!$subscription_id) {
+            wp_send_json_error(array('message' => 'Invalid subscription ID'));
+            wp_die();
+        }
+
         global $wpdb;
-        
         $subscription = $wpdb->get_row($wpdb->prepare(
             "SELECT s.*, u.display_name, u.user_email 
             FROM {$wpdb->prefix}akadimies_subscriptions s
@@ -244,5 +255,7 @@ class AkadimiesAdmin {
         } else {
             wp_send_json_error(array('message' => 'Subscription not found'));
         }
+
+        wp_die();
     }
 }
