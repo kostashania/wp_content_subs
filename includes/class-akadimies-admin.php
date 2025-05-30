@@ -53,9 +53,6 @@ class AkadimiesAdmin {
 
     public function enqueue_admin_scripts($hook) {
         if (strpos($hook, 'akadimies') !== false) {
-            wp_enqueue_style('akadimies-admin', AKADIMIES_URL . 'assets/css/admin-style.css
-    public function enqueue_admin_scripts($hook) {
-        if (strpos($hook, 'akadimies') !== false) {
             wp_enqueue_style('akadimies-admin', AKADIMIES_URL . 'assets/css/admin-style.css');
             wp_enqueue_script('akadimies-admin', AKADIMIES_URL . 'assets/js/admin.js', array('jquery'), AKADIMIES_VERSION, true);
             wp_localize_script('akadimies-admin', 'akadimiesAdmin', array(
@@ -69,7 +66,6 @@ class AkadimiesAdmin {
             ));
         }
     }
-
     public function render_subscriptions_page() {
         global $wpdb;
         
@@ -137,7 +133,6 @@ class AkadimiesAdmin {
     private function drop_all_tables() {
         global $wpdb;
 
-        // List of tables to drop
         $tables = array(
             $wpdb->prefix . 'akadimies_subscriptions',
             $wpdb->prefix . 'akadimies_payments'
@@ -147,17 +142,13 @@ class AkadimiesAdmin {
             $wpdb->query("DROP TABLE IF EXISTS $table");
         }
 
-        // Delete all plugin options
         $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE 'akadimies_%'");
 
-        // Clear any scheduled tasks
         wp_clear_scheduled_hook('akadimies_daily_subscription_check');
         wp_clear_scheduled_hook('akadimies_cleanup_expired_subscriptions');
 
-        // Log the action
         error_log('Akadimies tables dropped by admin');
 
-        // Reinstall fresh tables
         require_once AKADIMIES_PATH . 'includes/class-akadimies-database.php';
         $database = new AkadimiesDatabase();
         $database->install();
@@ -236,7 +227,6 @@ class AkadimiesAdmin {
 
         wp_die();
     }
-
     public function get_subscription_details() {
         check_ajax_referer('akadimies_admin_nonce', 'nonce');
 
@@ -263,7 +253,36 @@ class AkadimiesAdmin {
 
         if ($subscription) {
             ob_start();
-            include AKADIMIES_PATH . 'templates/admin/subscription-details.php';
+            ?>
+            <table class="widefat">
+                <tr>
+                    <th><?php _e('User', 'akadimies'); ?></th>
+                    <td><?php echo esc_html($subscription->display_name); ?> (<?php echo esc_html($subscription->user_email); ?>)</td>
+                </tr>
+                <tr>
+                    <th><?php _e('Type', 'akadimies'); ?></th>
+                    <td><?php echo esc_html($subscription->subscription_type); ?></td>
+                </tr>
+                <tr>
+                    <th><?php _e('Status', 'akadimies'); ?></th>
+                    <td><?php echo esc_html($subscription->status); ?></td>
+                </tr>
+                <tr>
+                    <th><?php _e('Start Date', 'akadimies'); ?></th>
+                    <td><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($subscription->start_date))); ?></td>
+                </tr>
+                <tr>
+                    <th><?php _e('End Date', 'akadimies'); ?></th>
+                    <td><?php echo $subscription->end_date ? esc_html(date_i18n(get_option('date_format'), strtotime($subscription->end_date))) : ''; ?></td>
+                </tr>
+                <?php if (!empty($subscription->admin_notes)): ?>
+                <tr>
+                    <th><?php _e('Notes', 'akadimies'); ?></th>
+                    <td><?php echo esc_html($subscription->admin_notes); ?></td>
+                </tr>
+                <?php endif; ?>
+            </table>
+            <?php
             $html = ob_get_clean();
             wp_send_json_success(array('html' => $html));
         } else {
@@ -271,5 +290,126 @@ class AkadimiesAdmin {
         }
 
         wp_die();
+    }
+
+    public function save_subscription_type() {
+        check_ajax_referer('akadimies_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+            return;
+        }
+
+        $type_id = isset($_POST['type_id']) ? sanitize_text_field($_POST['type_id']) : '';
+        $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
+        $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+        $duration = isset($_POST['duration']) ? intval($_POST['duration']) : 30;
+        $description = isset($_POST['description']) ? sanitize_textarea_field($_POST['description']) : '';
+        $active = isset($_POST['active']) ? (bool)$_POST['active'] : true;
+
+        if (empty($name) || $price <= 0 || $duration <= 0) {
+            wp_send_json_error(array('message' => 'Invalid data'));
+            return;
+        }
+
+        $types = get_option('akadimies_subscription_types', array());
+
+        if (empty($type_id)) {
+            $type_id = uniqid('type_');
+        }
+
+        $types[$type_id] = array(
+            'name' => $name,
+            'price' => $price,
+            'duration' => $duration,
+            'description' => $description,
+            'active' => $active
+        );
+
+        update_option('akadimies_subscription_types', $types);
+
+        wp_send_json_success(array(
+            'message' => 'Subscription type saved',
+            'type_id' => $type_id
+        ));
+    }
+
+    public function delete_subscription_type() {
+        check_ajax_referer('akadimies_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+            return;
+        }
+
+        $type_id = isset($_POST['type_id']) ? sanitize_text_field($_POST['type_id']) : '';
+
+        if (empty($type_id)) {
+            wp_send_json_error(array('message' => 'Invalid type ID'));
+            return;
+        }
+
+        $types = get_option('akadimies_subscription_types', array());
+
+        if (isset($types[$type_id])) {
+            unset($types[$type_id]);
+            update_option('akadimies_subscription_types', $types);
+            wp_send_json_success(array('message' => 'Subscription type deleted'));
+        } else {
+            wp_send_json_error(array('message' => 'Subscription type not found'));
+        }
+    }
+
+    public function get_subscription_type() {
+        check_ajax_referer('akadimies_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+            return;
+        }
+
+        $type_id = isset($_POST['type_id']) ? sanitize_text_field($_POST['type_id']) : '';
+
+        if (empty($type_id)) {
+            wp_send_json_error(array('message' => 'Invalid type ID'));
+            return;
+        }
+
+        $types = get_option('akadimies_subscription_types', array());
+
+        if (isset($types[$type_id])) {
+            wp_send_json_success($types[$type_id]);
+        } else {
+            wp_send_json_error(array('message' => 'Subscription type not found'));
+        }
+    }
+
+    public function toggle_subscription_type() {
+        check_ajax_referer('akadimies_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+            return;
+        }
+
+        $type_id = isset($_POST['type_id']) ? sanitize_text_field($_POST['type_id']) : '';
+        $active = isset($_POST['active']) ? (bool)$_POST['active'] : false;
+
+        if (empty($type_id)) {
+            wp_send_json_error(array('message' => 'Invalid type ID'));
+            return;
+        }
+
+        $types = get_option('akadimies_subscription_types', array());
+
+        if (isset($types[$type_id])) {
+            $types[$type_id]['active'] = $active;
+            update_option('akadimies_subscription_types', $types);
+            wp_send_json_success(array(
+                'message' => $active ? 'Subscription type activated' : 'Subscription type deactivated'
+            ));
+        } else {
+            wp_send_json_error(array('message' => 'Subscription type not found'));
+        }
     }
 }
