@@ -86,7 +86,7 @@ class AkadimiesDatabase {
     public function create_subscription($data) {
         global $wpdb;
         
-        // Check for existing active subscription
+        // Check for existing active subscription of same type
         $existing = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}akadimies_subscriptions 
             WHERE user_id = %d 
@@ -97,22 +97,58 @@ class AkadimiesDatabase {
         ));
 
         if ($existing) {
-            // Extend the existing subscription
-            $new_end_date = $existing->end_date ? 
-                date('Y-m-d H:i:s', strtotime($existing->end_date . ' +30 days')) :
-                date('Y-m-d H:i:s', strtotime('+30 days'));
+            // Calculate new end date
+            $new_end_date = null;
+            if ($existing->end_date) {
+                // Add new duration to existing end date
+                $new_end_date = date('Y-m-d H:i:s', strtotime($existing->end_date . ' + ' . $data['duration'] . ' days'));
+            } else {
+                // Add new duration to current date
+                $new_end_date = date('Y-m-d H:i:s', strtotime('+' . $data['duration'] . ' days'));
+            }
 
-            return $wpdb->update(
+            // Update existing subscription
+            $updated = $wpdb->update(
                 $wpdb->prefix . 'akadimies_subscriptions',
                 array(
                     'end_date' => $new_end_date,
-                    'updated_at' => current_time('mysql')
+                    'amount' => $existing->amount + $data['amount'],
+                    'updated_at' => current_time('mysql'),
+                    'admin_notes' => sprintf(
+                        'Subscription extended on %s. Previous amount: €%s, Added amount: €%s, New duration added: %d days',
+                        current_time('mysql'),
+                        $existing->amount,
+                        $data['amount'],
+                        $data['duration']
+                    )
                 ),
-                array('id' => $existing->id)
+                array('id' => $existing->id),
+                array('%s', '%f', '%s', '%s'),
+                array('%d')
             );
+
+            if ($updated) {
+                // Create a subscription extension record
+                $wpdb->insert(
+                    $wpdb->prefix . 'akadimies_subscription_extensions',
+                    array(
+                        'subscription_id' => $existing->id,
+                        'amount' => $data['amount'],
+                        'duration' => $data['duration'],
+                        'previous_end_date' => $existing->end_date,
+                        'new_end_date' => $new_end_date,
+                        'created_at' => current_time('mysql')
+                    ),
+                    array('%d', '%f', '%d', '%s', '%s', '%s')
+                );
+
+                return $existing->id;
+            }
+            
+            return false;
         }
 
-        // Create new subscription
+        // If no existing subscription, create new one
         return $wpdb->insert(
             $wpdb->prefix . 'akadimies_subscriptions',
             $data,
@@ -126,6 +162,7 @@ class AkadimiesDatabase {
                 '%f'  // amount
             )
         );
+        
     }
 
     public function update_subscription($id, $data) {
