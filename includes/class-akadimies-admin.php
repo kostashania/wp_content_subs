@@ -155,40 +155,109 @@ class AkadimiesAdmin {
     }
 
     public function approve_subscription() {
-        check_ajax_referer('akadimies_admin_nonce', 'nonce');
+    check_ajax_referer('akadimies_admin_nonce', 'nonce');
 
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
-            wp_die();
-        }
-
-        $subscription_id = isset($_POST['subscription_id']) ? intval($_POST['subscription_id']) : 0;
-
-        if (!$subscription_id) {
-            wp_send_json_error(array('message' => 'Invalid subscription ID'));
-            wp_die();
-        }
-
-        global $wpdb;
-        $result = $wpdb->update(
-            $wpdb->prefix . 'akadimies_subscriptions',
-            array(
-                'status' => 'active',
-                'updated_at' => current_time('mysql')
-            ),
-            array('id' => $subscription_id),
-            array('%s', '%s'),
-            array('%d')
-        );
-
-        if ($result !== false) {
-            wp_send_json_success(array('message' => 'Subscription approved'));
-        } else {
-            wp_send_json_error(array('message' => 'Failed to update subscription'));
-        }
-
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(array('message' => 'Unauthorized'));
         wp_die();
     }
+
+    $subscription_id = isset($_POST['subscription_id']) ? intval($_POST['subscription_id']) : 0;
+
+    if (!$subscription_id) {
+        wp_send_json_error(array('message' => 'Invalid subscription ID'));
+        wp_die();
+    }
+
+    global $wpdb;
+
+    // Start transaction
+    $wpdb->query('START TRANSACTION');
+
+    try {
+        // Get the subscription we want to approve
+        $subscription = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}akadimies_subscriptions WHERE id = %d",
+            $subscription_id
+        ));
+
+        if (!$subscription) {
+            throw new Exception('Subscription not found');
+        }
+
+        // Check for existing active subscription
+        $existing = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}akadimies_subscriptions 
+            WHERE user_id = %d 
+            AND subscription_type = %s 
+            AND status = 'active'
+            AND id != %d",
+            $subscription->user_id,
+            $subscription->subscription_type,
+            $subscription_id
+        ));
+
+        if ($existing) {
+            // Calculate new end date for existing subscription
+            $new_end_date = $existing->end_date ? 
+                date('Y-m-d H:i:s', strtotime($existing->end_date . ' + 30 days')) :
+                date('Y-m-d H:i:s', strtotime('+30 days'));
+
+            // Update existing subscription
+            $wpdb->update(
+                $wpdb->prefix . 'akadimies_subscriptions',
+                array(
+                    'end_date' => $new_end_date,
+                    'amount' => $existing->amount + $subscription->amount,
+                    'admin_notes' => sprintf(
+                        "Previous notes: %s\n\nMerged with subscription #%d on %s. Added amount: €%s",
+                        $existing->admin_notes,
+                        $subscription_id,
+                        current_time('mysql'),
+                        $subscription->amount
+                    ),
+                    'updated_at' => current_time('mysql')
+                ),
+                array('id' => $existing->id)
+            );
+
+            // Update the new subscription to mark it as merged
+            $wpdb->update(
+                $wpdb->prefix . 'akadimies_subscriptions',
+                array(
+                    'status' => 'merged',
+                    'admin_notes' => sprintf(
+                        "Merged into subscription #%d on %s",
+                        $existing->id,
+                        current_time('mysql')
+                    ),
+                    'updated_at' => current_time('mysql')
+                ),
+                array('id' => $subscription_id)
+            );
+        } else {
+            // No existing active subscription, just activate this one
+            $wpdb->update(
+                $wpdb->prefix . 'akadimies_subscriptions',
+                array(
+                    'status' => 'active',
+                    'updated_at' => current_time('mysql')
+                ),
+                array('id' => $subscription_id)
+            );
+        }
+
+        $wpdb->query('COMMIT');
+        wp_send_json_success(array('message' => 'Subscription processed successfully'));
+
+    } catch (Exception $e) {
+        $wpdb->query('ROLLBACK');
+        wp_send_json_error(array('message' => $e->getMessage()));
+    }
+
+    wp_die();
+}
+
 
     public function reject_subscription() {
         check_ajax_referer('akadimies_admin_nonce', 'nonce');
