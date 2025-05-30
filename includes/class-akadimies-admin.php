@@ -412,4 +412,28 @@ class AkadimiesAdmin {
             wp_send_json_error(array('message' => 'Subscription type not found'));
         }
     }
+    public function render_subscription_history($subscription_id) {
+    global $wpdb;
+    
+    $subscription = $wpdb->get_row($wpdb->prepare(
+        "SELECT s.*, u.display_name, u.user_email 
+        FROM {$wpdb->prefix}akadimies_subscriptions s
+        LEFT JOIN {$wpdb->users} u ON s.user_id = u.ID
+        WHERE s.id = %d",
+        $subscription_id
+    ));
+
+    if (!$subscription) {
+        return;
+    }
+
+    $extensions = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}akadimies_subscription_extensions 
+        WHERE subscription_id = %d 
+        ORDER BY created_at ASC",
+        $subscription_id
+    ));
+
+    include AKADIMIES_PATH . 'templates/admin/subscription-history.php';
+    }
 }
