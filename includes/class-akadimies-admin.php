@@ -76,10 +76,23 @@ class AkadimiesAdmin {
             return;
         }
 
-        if (isset($_POST['submit']) && check_admin_referer('akadimies_settings')) {
+        // Handle database deletion
+        if (isset($_POST['drop_tables']) && check_admin_referer('akadimies_database_action', 'database_nonce')) {
+            $this->drop_all_tables();
+            add_settings_error(
+                'akadimies_messages',
+                'tables_dropped',
+                __('All subscription data has been deleted.', 'akadimies'),
+                'updated'
+            );
+        }
+
+        // Handle regular settings save
+        if (isset($_POST['submit']) && check_admin_referer('akadimies_settings', 'akadimies_nonce')) {
             $this->save_settings();
         }
 
+        // Get current settings
         $settings = array(
             'player_price' => get_option('akadimies_player_price', '29.99'),
             'coach_price' => get_option('akadimies_coach_price', '49.99'),
@@ -118,6 +131,35 @@ class AkadimiesAdmin {
             __('Settings Saved', 'akadimies'),
             'updated'
         );
+    }
+
+    private function drop_all_tables() {
+        global $wpdb;
+
+        // List of tables to drop
+        $tables = array(
+            $wpdb->prefix . 'akadimies_subscriptions',
+            $wpdb->prefix . 'akadimies_payments'
+        );
+
+        foreach ($tables as $table) {
+            $wpdb->query("DROP TABLE IF EXISTS $table");
+        }
+
+        // Delete all plugin options
+        $wpdb->query("DELETE FROM $wpdb->options WHERE option_name LIKE 'akadimies_%'");
+
+        // Clear any scheduled tasks
+        wp_clear_scheduled_hook('akadimies_daily_subscription_check');
+        wp_clear_scheduled_hook('akadimies_cleanup_expired_subscriptions');
+
+        // Log the action
+        error_log('Akadimies tables dropped by admin');
+
+        // Reinstall fresh tables
+        require_once AKADIMIES_PATH . 'includes/class-akadimies-database.php';
+        $database = new AkadimiesDatabase();
+        $database->install();
     }
 
     public function approve_subscription() {
@@ -186,7 +228,7 @@ class AkadimiesAdmin {
         );
 
         if ($result !== false) {
-            wp_send_json_error(array('message' => 'Subscription rejected'));
+            wp_send_json_success(array('message' => 'Subscription rejected'));
         } else {
             wp_send_json_error(array('message' => 'Failed to update subscription'));
         }
