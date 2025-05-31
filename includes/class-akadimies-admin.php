@@ -198,6 +198,130 @@ class AkadimiesAdmin {
         ));
 
         if ($existing) {
+            // Calculate days to add (default 30 if not specified)
+            $days_to_add = 30; // You might want to make this configurable or get it from the subscription type
+
+            // Calculate new end date for existing subscription
+            if ($existing->end_date) {
+                // If there's an existing end date, add days to it
+                $new_end_date = date('Y-m-d H:i:s', strtotime($existing->end_date . ' + ' . $days_to_add . ' days'));
+            } else {
+                // If no end date, add days from current date
+                $new_end_date = date('Y-m-d H:i:s', strtotime('+' . $days_to_add . ' days'));
+            }
+
+            // Update existing subscription
+            $wpdb->update(
+                $wpdb->prefix . 'akadimies_subscriptions',
+                array(
+                    'end_date' => $new_end_date,
+                    'amount' => $existing->amount + $subscription->amount,
+                    'admin_notes' => sprintf(
+                        "Previous notes: %s\n\nMerged with subscription #%d on %s. Added amount: €%s, Added days: %d\nNew end date: %s",
+                        $existing->admin_notes ? $existing->admin_notes . "\n" : '',
+                        $subscription_id,
+                        current_time('mysql'),
+                        $subscription->amount,
+                        $days_to_add,
+                        $new_end_date
+                    ),
+                    'updated_at' => current_time('mysql')
+                ),
+                array('id' => $existing->id)
+            );
+
+            // Create extension record
+            $wpdb->insert(
+                $wpdb->prefix . 'akadimies_subscription_extensions',
+                array(
+                    'subscription_id' => $existing->id,
+                    'amount' => $subscription->amount,
+                    'duration' => $days_to_add,
+                    'previous_end_date' => $existing->end_date,
+                    'new_end_date' => $new_end_date,
+                    'created_at' => current_time('mysql')
+                ),
+                array(
+                    '%d', // subscription_id
+                    '%f', // amount
+                    '%d', // duration
+                    '%s', // previous_end_date
+                    '%s', // new_end_date
+                    '%s'  // created_at
+                )
+            );
+
+            // Update the new subscription to mark it as merged
+            $wpdb->update(
+                $wpdb->prefix . 'akadimies_subscriptions',
+                array(
+                    'status' => 'merged',
+                    'admin_notes' => sprintf(
+                        "Merged into subscription #%d on %s. Added %d days to existing subscription.",
+                        $existing->id,
+                        current_time('mysql'),
+                        $days_to_add
+                    ),
+                    'updated_at' => current_time('mysql')
+                ),
+                array('id' => $subscription_id)
+            );
+        } else {
+            // No existing active subscription, activate this one with 30 days
+            $end_date = date('Y-m-d H:i:s', strtotime('+30 days'));
+            
+            $wpdb->update(
+                $wpdb->prefix . 'akadimies_subscriptions',
+                array(
+                    'status' => 'active',
+                    'end_date' => $end_date,
+                    'updated_at' => current_time('mysql')
+                ),
+                array('id' => $subscription_id)
+            );
+        }
+
+        $wpdb->query('COMMIT');
+        wp_send_json_success(array('message' => 'Subscription processed successfully'));
+
+    } catch (Exception $e) {
+        $wpdb->query('ROLLBACK');
+        wp_send_json_error(array('message' => $e->getMessage()));
+    }
+
+    wp_die();
+}
+
+
+    global $wpdb;
+
+    // Start transaction
+    $wpdb->query('START TRANSACTION');
+
+    try {
+        // Get the subscription we want to approve
+        $subscription = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}akadimies_subscriptions WHERE id = %d",
+            $subscription_id
+        ));
+
+        if (!$subscription) {
+            throw new Exception('Subscription not found');
+        }
+
+        // Check for existing active subscription
+        $existing = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}akadimies_subscriptions 
+            WHERE user_id = %d 
+            AND subscription_type = %s 
+            AND status = 'active'
+            AND id != %d",
+            $subscription->user_id,
+            $subscription->subscription_type,
+            $subscription_id
+        ));
+
+        if ($existing) {
             // Calculate new end date for existing subscription
             $new_end_date = $existing->end_date ? 
                 date('Y-m-d H:i:s', strtotime($existing->end_date . ' + 30 days')) :
