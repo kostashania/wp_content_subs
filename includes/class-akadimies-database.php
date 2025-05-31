@@ -6,10 +6,13 @@ class AkadimiesDatabase {
         global $wpdb;
         $charset_collate = $wpdb->get_charset_collate();
 
-        $sql = array();
+        // First, drop existing tables to ensure clean installation
+        $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}akadimies_subscription_extensions");
+        $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}akadimies_payments");
+        $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}akadimies_subscriptions");
 
         // Create subscriptions table
-        $sql[] = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}akadimies_subscriptions (
+        $wpdb->query("CREATE TABLE IF NOT EXISTS {$wpdb->prefix}akadimies_subscriptions (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             user_id bigint(20) NOT NULL,
             subscription_type varchar(20) NOT NULL,
@@ -20,14 +23,14 @@ class AkadimiesDatabase {
             amount decimal(10,2) NOT NULL,
             admin_notes text NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY user_id (user_id),
             KEY status (status)
-        ) $charset_collate;";
+        ) $charset_collate");
 
         // Create subscription extensions table
-        $sql[] = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}akadimies_subscription_extensions (
+        $wpdb->query("CREATE TABLE IF NOT EXISTS {$wpdb->prefix}akadimies_subscription_extensions (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             subscription_id bigint(20) NOT NULL,
             amount decimal(10,2) NOT NULL,
@@ -38,10 +41,10 @@ class AkadimiesDatabase {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY subscription_id (subscription_id)
-        ) $charset_collate;";
+        ) $charset_collate");
 
         // Create payments table
-        $sql[] = "CREATE TABLE IF NOT EXISTS {$wpdb->prefix}akadimies_payments (
+        $wpdb->query("CREATE TABLE IF NOT EXISTS {$wpdb->prefix}akadimies_payments (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             subscription_id bigint(20) NOT NULL,
             extension_id bigint(20) NULL,
@@ -55,21 +58,9 @@ class AkadimiesDatabase {
             PRIMARY KEY  (id),
             KEY subscription_id (subscription_id),
             KEY extension_id (extension_id)
-        ) $charset_collate;";
+        ) $charset_collate");
 
-        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-
-        // Drop existing tables to ensure clean installation
-        $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}akadimies_subscription_extensions");
-        $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}akadimies_payments");
-        $wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}akadimies_subscriptions");
-
-        // Create tables
-        foreach ($sql as $query) {
-            dbDelta($query);
-        }
-
-        update_option('akadimies_db_version', '1.2');
+        update_option('akadimies_db_version', '1.3');
     }
 
     public function get_subscriptions($args = array()) {
@@ -159,5 +150,37 @@ class AkadimiesDatabase {
                 '%s'  // created_at
             )
         );
+    }
+
+    public function get_subscription_total_days($subscription_id) {
+        global $wpdb;
+        
+        $subscription = $this->get_subscription($subscription_id);
+        if (!$subscription) {
+            return 0;
+        }
+
+        // Get base duration
+        $base_duration = $this->calculate_days_between_dates($subscription->start_date, $subscription->end_date);
+
+        // Get extensions
+        $extensions = $this->get_subscription_extensions($subscription_id);
+        $extension_days = 0;
+        foreach ($extensions as $extension) {
+            $extension_days += $extension->duration;
+        }
+
+        return $base_duration + $extension_days;
+    }
+
+    private function calculate_days_between_dates($start_date, $end_date) {
+        if (!$start_date || !$end_date) {
+            return 0;
+        }
+        
+        $start = new DateTime($start_date);
+        $end = new DateTime($end_date);
+        $interval = $start->diff($end);
+        return $interval->days;
     }
 }
